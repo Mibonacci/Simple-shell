@@ -8,9 +8,9 @@
 int main()
 {
 	while (1)
-    {
+	{
 		if (isatty(STDOUT_FILENO))
-        {
+		{
 			printf("$ ");
 			fflush(stdout);
 		}
