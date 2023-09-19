@@ -3,53 +3,55 @@
 void getinput(void)
 {
 	char *input = NULL;
-	size_t input_length = 0;
-	pid_t child_pid, wait_pid;
-	int status;
+	size_t inputsize = 0;
+	int inputcount;
+	char *tkn;
+	char **storage = malloc(sizeof(char *)*MAX_INPUT_SIZE);
+	pid_t process;
+	int state, i = 0, j = 0;
 
-	while(1)
+
+	while (1)
 	{
-		/*read input from stream*/
-		ssize_t bytes_read = getline(&input, &input_length, stdin);
+		prompt();
+		inputcount = getline(&input, &inputsize, stdin);
 
-		if (bytes_read == -1)
+		if (inputcount == -1) {
+            printf("\n"); /*EOF*/
+            break;
+        }
+
+		tkn = strtok(input, " \t\n");
+
+		while(tkn)
 		{
-		/*handling EOF or ctrlD*/
-			break;
+			storage[i] = strdup(tkn);
+			tkn = strtok(NULL, " \t\n");
+			i++;
 		}
+		storage[i] = NULL; /*terminate arg list*/
 
-		/*handling special character new line*/
-		if (bytes_read > 0 && input[bytes_read - 1] == '\n')
+		process = fork();
+
+		if (process == 0)
 		{
-			input[bytes_read - 1] = '\0';
+			if (execve(storage[0], storage, NULL) == -1)
+				perror("execve");
 		}
-
-		/*Fork*/
-		child_pid = fork();
-
-		if (child_pid == -1)
+		if (process == -1)
 		{
 			perror("fork");
 			exit(EXIT_FAILURE);
 		}
-
-		if (child_pid == 0)
-		{
-			/*if execlp returns error child process terminates*/
-			execlp(input, input, NULL);
-			perror(input);
-			exit(EXIT_FAILURE);
-		}
 		else
 		{
-			/*pprocess waits for the child*/
-			wait_pid = wait(&status);
-			if (wait_pid == -1)
-			{
-				perror("wait");
-				exit(EXIT_FAILURE);
-			}
+			wait(&state);
 		}
+		while (storage[j] != NULL)
+			{
+    			free(storage[j]);
+    			j++;
+			}
+		i = 0;
 	}
-	free(input);
 }
