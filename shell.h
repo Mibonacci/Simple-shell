@@ -1,8 +1,8 @@
 #ifndef MAIN_H
 #define MAIN_H
-#define MAX_ARGS 4096
-#define MAX_INPUT_SIZE 4096
-#define READ_SIZE 4096
+#define MAX_ARGS 1024
+#define MAX_INPUT_SIZE 1024
+#define READ_SIZE 1024
 #define TOK_D " \t\r\n\a\""
 #define INITIAL_bf_SIZE 64
 #define GROW_FACTOR 2
@@ -11,15 +11,12 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
-#include <limits.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 
-void getinput(void);
-void prompt(void);
-
+/*prototypes*/
+int exec(char **args);
 
 
 #endif

@@ -67,3 +67,20 @@ int main() {
 
     return 0;
 }
+
+
+void clearmemo()
+{
+	if (storage != NULL)
+	{
+		int i = 0;
+		while(storage[i] != NULL)
+		{
+			free(storage[i]);
+			i++;
+		}
+		free(storage);
+	}
+}
+
+
