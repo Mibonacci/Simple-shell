@@ -28,7 +28,8 @@ int exec(char **args) {
     return 1;
 }
 
-void prompt(void) {
+void prompt(void)
+{
     char input[MAX_INPUT_SIZE];
     char *args[MAX_INPUT_SIZE];
 	char *inputclone;
@@ -36,9 +37,11 @@ void prompt(void) {
 	char *token;
     int i;
 
-    while (1) {
+    while (1)
+    {
         write(STDOUT_FILENO, promptStr, sizeof(promptStr) - 1);
-        if (fgets(input, sizeof(input), stdin) == NULL) {
+        if (fgets(input, sizeof(input), stdin) == NULL)
+        {
             perror("");
             exit(EXIT_FAILURE);
         }
@@ -46,14 +49,16 @@ void prompt(void) {
 		input[strcspn(input, "\n")] = '\0';
 
         inputclone = strdup(input);
-        if (inputclone == NULL) {
+        if (inputclone == NULL)
+        {
             perror("strdup");
             exit(EXIT_FAILURE);
         }
 
         i = 0;
         token = strtok(input, " \t\n");
-        while (token != NULL) {
+        while (token != NULL)
+        {
             args[i++] = token;
             token = strtok(NULL, " \t\n");
         }

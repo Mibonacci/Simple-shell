@@ -17,6 +17,7 @@
 
 /*prototypes*/
 int exec(char **args);
+void prompt(void);
 
 
 #endif
