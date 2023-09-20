@@ -15,7 +15,7 @@ int exec(char **args) {
     process = fork();
     if (process == 0) {
         if (execve(args[0], args, NULL) == -1) {
-            perror("execve");
+            perror("");
             exit(EXIT_FAILURE);
         }
     } else if (process < 0) {
@@ -31,6 +31,7 @@ int exec(char **args) {
 void prompt(void) {
     char input[MAX_INPUT_SIZE];
     char *args[MAX_INPUT_SIZE];
+	char *inputclone;
 	char promptStr[] = "$ ";
 	char *token;
     int i;
@@ -39,6 +40,14 @@ void prompt(void) {
         write(STDOUT_FILENO, promptStr, sizeof(promptStr) - 1);
         if (fgets(input, sizeof(input), stdin) == NULL) {
             perror("");
+            exit(EXIT_FAILURE);
+        }
+
+		input[strcspn(input, "\n")] = '\0';
+
+        inputclone = strdup(input);
+        if (inputclone == NULL) {
+            perror("strdup");
             exit(EXIT_FAILURE);
         }
 
@@ -51,12 +60,7 @@ void prompt(void) {
         args[i] = NULL;
         exec(args);
 
-		i = 0;
-        while (args[i] != NULL)
-		{
-            free(args[i]);
-            i++;
-		}
+		free(inputclone);
     }
 }
 
