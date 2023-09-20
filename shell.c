@@ -50,6 +50,13 @@ void prompt(void) {
         }
         args[i] = NULL;
         exec(args);
+
+		i = 0;
+        while (args[i] != NULL)
+		{
+            free(args[i]);
+            i++;
+		}
     }
 }
 
