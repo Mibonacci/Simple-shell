@@ -1,7 +1,7 @@
 #include "shell.h"
 
 /**
- * exec - execute function
+ * exec - regular execute function
 */
 
 int exec(char **args) {
@@ -31,7 +31,10 @@ int exec(char **args) {
 void prompt(void)
 {
     char input[MAX_INPUT_SIZE];
+    char output[MAX_INPUT_SIZE];
     char *args[MAX_INPUT_SIZE];
+    char *spacing = input;
+    char *outputPtr = output;
 	char *inputclone;
 	char promptStr[] = "$ ";
 	char *token;
@@ -48,7 +51,18 @@ void prompt(void)
 
 		input[strcspn(input, "\n")] = '\0';
 
-        inputclone = strdup(input);
+        /*this is to override multiple spaces between command arguments*/
+        while (*spacing)
+        {
+            *outputPtr++ = *spacing++;
+            while (isspace(*spacing) && (outputPtr == output || !isspace(outputPtr[-1])))
+            {
+                spacing++;
+            }
+        }
+        *outputPtr = '\0';
+
+        inputclone = strdup(output);
         if (inputclone == NULL)
         {
             perror("strdup");
@@ -56,7 +70,7 @@ void prompt(void)
         }
 
         i = 0;
-        token = strtok(input, " \t\n");
+        token = strtok(output, " \t\n");
         while (token != NULL)
         {
             args[i++] = token;
