@@ -1,67 +1,115 @@
 #include "shell.h"
 
 /**
- * exec - regular execute function
+ * all the functions are in one file you know why
 */
 
-int exec(char **args) {
-    pid_t process;
+int execute_command(char **args)
+{
+    pid_t pid;
     int status;
 
-    if (args[0] == NULL) {
-        return 1;
-    }
-
-    process = fork();
-    if (process == 0) {
-        if (execve(args[0], args, NULL) == -1) {
+    pid = fork();
+    if (pid == 0) {
+        char *env[] = { NULL };
+        if (execve(args[0], args, env) == -1) {
             perror("");
-            exit(EXIT_FAILURE);
         }
-    } else if (process < 0) {
+        exit(EXIT_FAILURE);
+
+    } else if (pid < 0) {
         perror("");
     } else {
         do {
-            waitpid(process, &status, WUNTRACED);
+            waitpid(pid, &status, WUNTRACED);
         } while (!WIFEXITED(status) && !WIFSIGNALED(status));
     }
+
     return 1;
 }
 
-void prompt(void) {
-    char input[MAX_INPUT_SIZE];
-    char *args[MAX_INPUT_SIZE];
-    char *token;
-    int i;
+int execute_shell_command(char **args)
+{
+    if (args[0] == NULL) {
+        return 1;
+    }
+    /*execute command*/
+    return execute_command(args);
+}
 
-    while (1) {
-        write(STDOUT_FILENO, "$ ", 2);
-        if (fgets(input, sizeof(input), stdin) == NULL) {
+char *read_line(void)
+{
+    char *line = NULL;
+    size_t bufsize = 0;
+
+    if (getline(&line, &bufsize, stdin) == -1) {
+        if (feof(stdin)) {
+            exit(EXIT_SUCCESS);
+        } else {
             perror("");
             exit(EXIT_FAILURE);
         }
+    }
+    return line;
+}
 
-        input[strcspn(input, "\n")] = '\0';
+char **split_line(char *line)
+{
+    int bufsize = MAX_INPUT_SIZE;
+    int position = 0;
+    char **tokens = malloc(bufsize * sizeof(char *));
+    char *token;
 
-        i = 0;
-        token = strtok(input, " \t\n");
-        while (token != NULL) {
-            args[i++] = token;
-            token = strtok(NULL, " \t\n");
-        }
-        args[i] = NULL;
-        
-        if (i > 0) {
-            if (strcmp(args[0], "exit") == 0) {
-                exit(0);
+    if (!tokens) {
+        perror("");
+        exit(EXIT_FAILURE);
+    }
+
+    token = strtok(line, " \t\r\n\a");
+    while (token != NULL) {
+        tokens[position] = token;
+        position++;
+
+        if (position >= bufsize) {
+            bufsize += MAX_INPUT_SIZE;
+            tokens = realloc(tokens, bufsize * sizeof(char *));
+            if (!tokens) {
+                perror("");
+                exit(EXIT_FAILURE);
             }
         }
 
-        exec(args);
+        token = strtok(NULL, " \t\r\n\a");
     }
+    tokens[position] = NULL;
+    return tokens;
 }
 
-int main() {
-    prompt();
-    return 0;
+void write_output(const char *str)
+{
+    size_t len = strlen(str);
+    write(STDOUT_FILENO, str, len);
+}
+
+void shell_loop(void)
+{
+    char *line;
+    char **args;
+    int status;
+
+    do {
+        write_output("$ ");
+        line = read_line();
+        args = split_line(line);
+        status = execute_shell_command(args);
+
+        free(line);
+        free(args);
+    } while (status);
+}
+
+int main(void)
+{
+    shell_loop();
+    return EXIT_SUCCESS;
 }
