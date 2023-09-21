@@ -16,7 +16,6 @@ int execute_command(char **args)
             perror("");
         }
         exit(EXIT_FAILURE);
-
     } else if (pid < 0) {
         perror("");
     } else {
@@ -33,7 +32,12 @@ int execute_shell_command(char **args)
     if (args[0] == NULL) {
         return 1;
     }
-    /*execute command*/
+
+     if (strcmp(args[0], "exit") == 0) {
+        return 0;
+    }
+
+    /* Execute command */
     return execute_command(args);
 }
 
@@ -53,6 +57,22 @@ char *read_line(void)
     return line;
 }
 
+void collapse_spaces(char *line)
+{
+    char *dest = line;
+    char prev_char = ' ';
+
+    while (*line) {
+        if (*line == ' ' && prev_char == ' ') {
+            line++;
+        } else {
+            *dest++ = *line++;
+            prev_char = *(dest - 1);
+        }
+    }
+    *dest = '\0';
+}
+
 char **split_line(char *line)
 {
     int bufsize = MAX_INPUT_SIZE;
@@ -64,6 +84,8 @@ char **split_line(char *line)
         perror("");
         exit(EXIT_FAILURE);
     }
+
+    line[strcspn(line, "\n")] = '\0';
 
     token = strtok(line, " \t\r\n\a");
     while (token != NULL) {
