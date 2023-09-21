@@ -2,6 +2,7 @@
 #define MAIN_H
 #define MAX_ARGS 4096
 #define MAX_INPUT_SIZE 4096
+#define MAX_LINE_LENGTH 1024
 #define READ_SIZE 4096
 #define TOK_D " \t\r\n\a\""
 #define INITIAL_bf_SIZE 64
@@ -17,9 +18,13 @@
 #include <ctype.h>
 
 /*prototypes*/
-int exec(char **args);
-void prompt(void);
 char *my_getline(void);
+void collapse_spaces(char *line);
+char **split_line(char *line);
+void write_output(const char *str);
+int execute_command(char **args);
+int execute_shell_command(char **args);
+void handle_exit_command(void);
 
 /*special to getline*/
 #define MAX_BUFFER_SIZE 256

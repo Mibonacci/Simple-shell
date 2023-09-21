@@ -32,6 +32,16 @@ char *my_getline(void) {
             }
         }
 
+        if (line_size >= MAX_LINE_LENGTH) {
+            fprintf(stderr, "Line length exceeded maximum.\n");
+            free(line);
+            exit(EXIT_FAILURE);
+        }
+
+        if (line != NULL && strcmp(line, "exit") == 0) {
+            handle_exit_command();
+        }
+        
         newline = memchr(input_buffer + buffer_position, '\n', buffer_size - buffer_position);
         if (newline != NULL) {
             size_t line_length = newline - (input_buffer + buffer_position);
@@ -121,8 +131,29 @@ void write_output(const char *str) {
 int execute_command(char **args) {
     pid_t pid;
     int status;
-    char *path = getenv("PATH");
+    char *path;
     char *token;
+
+    /*Check if the specified command exists as an absolute path*/
+    if (access(args[0], X_OK) == 0) {
+        pid = fork();
+        if (pid == 0) {
+            if (execve(args[0], args, NULL) == -1) {
+                perror("execute_command");
+                exit(EXIT_FAILURE);
+            }
+        } else if (pid < 0) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        } else {
+            do {
+                waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            return 1;
+        }
+    }
+
+    path = getenv("PATH");
     
     if (path == NULL) {
         perror("execute_command");
@@ -169,6 +200,7 @@ int execute_command(char **args) {
     return 1;
 }
 
+
 int execute_shell_command(char **args) {
     if (args[0] == NULL) {
         return 1;
@@ -180,6 +212,11 @@ int execute_shell_command(char **args) {
 
     /* Execute command */
     return execute_command(args);
+}
+
+void handle_exit_command(void) {
+    write_output("Exiting shell.\n");
+    exit(EXIT_SUCCESS);
 }
 
 void shell_loop(void) {
