@@ -19,6 +19,7 @@
 /*prototypes*/
 int exec(char **args);
 void prompt(void);
+char *my_getline(void);
 
 /*special to getline*/
 #define MAX_BUFFER_SIZE 256

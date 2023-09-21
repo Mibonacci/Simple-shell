@@ -62,19 +62,64 @@ int execute_shell_command(char **args)
     return execute_command(args);
 }
 
-char *read_line(void)
-{
+char *my_getline(void) {
     char *line = NULL;
-    size_t bufsize = 0;
+    char *newline;
+    size_t line_size = 0;
+    ssize_t read_bytes;
 
-    if (getline(&line, &bufsize, stdin) == -1) {
-        if (feof(stdin)) {
-            exit(EXIT_SUCCESS);
+    while (1) {
+        if (buffer_position >= buffer_size) {
+            read_bytes = read(STDIN_FILENO, input_buffer, sizeof(input_buffer));
+
+            if (read_bytes == -1) {
+                perror("my_getline");
+                exit(EXIT_FAILURE);
+            } else if (read_bytes == 0) {
+                if (line_size == 0) {
+                    free(line);
+                    return NULL;
+                } else {
+                    buffer_position = 0;
+                    buffer_size = 0;
+                    break;
+                }
+            } else {
+                buffer_position = 0;
+                buffer_size = read_bytes;
+            }
+        }
+
+        newline = memchr(input_buffer + buffer_position, '\n', buffer_size - buffer_position);
+        if (newline != NULL) {
+            size_t line_length = newline - (input_buffer + buffer_position);
+            line = realloc(line, line_size + line_length + 1);
+
+            if (line == NULL) {
+                perror("my_getline");
+                exit(EXIT_FAILURE);
+            }
+
+            memcpy(line + line_size, input_buffer + buffer_position, line_length);
+            line_size += line_length;
+            line[line_size] = '\0';
+
+            buffer_position += line_length + 1;
+            break;
         } else {
-            perror("");
-            exit(EXIT_FAILURE);
+            line = realloc(line, line_size + buffer_size - buffer_position + 1);
+
+            if (line == NULL) {
+                perror("my_getline");
+                exit(EXIT_FAILURE);
+            }
+
+            memcpy(line + line_size, input_buffer + buffer_position, buffer_size - buffer_position);
+            line_size += buffer_size - buffer_position;
+            buffer_position = buffer_size;
         }
     }
+
     return line;
 }
 
@@ -142,7 +187,7 @@ void shell_loop(void)
 
     do {
         write_output("$ ");
-        line = read_line();
+        line = my_getline();
         args = split_line(line);
         status = execute_shell_command(args);
 
