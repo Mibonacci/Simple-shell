@@ -20,6 +20,13 @@
 int exec(char **args);
 void prompt(void);
 
+/*special to getline*/
+#define MAX_BUFFER_SIZE 256
+
+static char input_buffer[MAX_BUFFER_SIZE];
+static int buffer_position = 0;
+static int buffer_size = 0;
+
 
 #endif
 
