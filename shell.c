@@ -8,16 +8,37 @@ int execute_command(char **args)
 {
     pid_t pid;
     int status;
+    char *path;
+    char *token;
+    char full_path[256];
 
     pid = fork();
     if (pid == 0) {
-        char *env[] = { NULL };
-        if (execve(args[0], args, env) == -1) {
-            perror("");
+        path = getenv("PATH");
+        if (path == NULL) {
+            perror("getenv");
+            exit(EXIT_FAILURE);
         }
+        token = strtok(path, ":");
+        while (token != NULL) {
+            snprintf(full_path, sizeof(full_path), "%s/%s", token, args[0]);
+
+            /*Check if the command exists in the current directory*/
+            if (access(full_path, X_OK) == 0) {
+                if (execve(full_path, args, NULL) == -1) {
+                    perror("");
+                }
+                exit(EXIT_FAILURE);
+            }
+
+            /*Move to the next directory in PATH*/
+            token = strtok(NULL, ":");
+        }
+        /*If the loop completes without finding the command*/
+        fprintf(stderr, "Command not found: %s\n", args[0]);
         exit(EXIT_FAILURE);
     } else if (pid < 0) {
-        perror("");
+        perror("fork");
     } else {
         do {
             waitpid(pid, &status, WUNTRACED);
