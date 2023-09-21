@@ -4,64 +4,6 @@
  * all the functions are in one file you know why
 */
 
-int execute_command(char **args)
-{
-    pid_t pid;
-    int status;
-    char *path;
-    char *token;
-    char full_path[256];
-
-    pid = fork();
-    if (pid == 0) {
-        path = getenv("PATH");
-        if (path == NULL) {
-            perror("getenv");
-            exit(EXIT_FAILURE);
-        }
-        token = strtok(path, ":");
-        while (token != NULL) {
-            snprintf(full_path, sizeof(full_path), "%s/%s", token, args[0]);
-
-            /*Check if the command exists in the current directory*/
-            if (access(full_path, X_OK) == 0) {
-                if (execve(full_path, args, NULL) == -1) {
-                    perror("");
-                }
-                exit(EXIT_FAILURE);
-            }
-
-            /*Move to the next directory in PATH*/
-            token = strtok(NULL, ":");
-        }
-        /*If the loop completes without finding the command*/
-        fprintf(stderr, "Command not found: %s\n", args[0]);
-        exit(EXIT_FAILURE);
-    } else if (pid < 0) {
-        perror("fork");
-    } else {
-        do {
-            waitpid(pid, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    }
-
-    return 1;
-}
-
-int execute_shell_command(char **args)
-{
-    if (args[0] == NULL) {
-        return 1;
-    }
-
-     if (strcmp(args[0], "exit") == 0) {
-        return 0;
-    }
-
-    /* Execute command */
-    return execute_command(args);
-}
-
 char *my_getline(void) {
     char *line = NULL;
     char *newline;
@@ -123,8 +65,7 @@ char *my_getline(void) {
     return line;
 }
 
-void collapse_spaces(char *line)
-{
+void collapse_spaces(char *line) {
     char *dest = line;
     char prev_char = ' ';
 
@@ -139,15 +80,14 @@ void collapse_spaces(char *line)
     *dest = '\0';
 }
 
-char **split_line(char *line)
-{
+char **split_line(char *line) {
     int bufsize = MAX_INPUT_SIZE;
     int position = 0;
     char **tokens = malloc(bufsize * sizeof(char *));
     char *token;
 
     if (!tokens) {
-        perror("");
+        perror("split_line");
         exit(EXIT_FAILURE);
     }
 
@@ -162,7 +102,7 @@ char **split_line(char *line)
             bufsize += MAX_INPUT_SIZE;
             tokens = realloc(tokens, bufsize * sizeof(char *));
             if (!tokens) {
-                perror("");
+                perror("split_line");
                 exit(EXIT_FAILURE);
             }
         }
@@ -173,14 +113,76 @@ char **split_line(char *line)
     return tokens;
 }
 
-void write_output(const char *str)
-{
+void write_output(const char *str) {
     size_t len = strlen(str);
     write(STDOUT_FILENO, str, len);
 }
 
-void shell_loop(void)
-{
+int execute_command(char **args) {
+    pid_t pid;
+    int status;
+    char *path = getenv("PATH");
+    char *token;
+    
+    if (path == NULL) {
+        perror("execute_command");
+        exit(EXIT_FAILURE);
+    }
+
+    token = strtok(path, ":");
+    
+    while (token != NULL) {
+        size_t full_path_len = strlen(token) + strlen(args[0]) + 2;/*2 for NULL*/
+        char *full_path = (char *)malloc(full_path_len);
+        
+        if (full_path == NULL) {
+            perror("execute_command");
+            exit(EXIT_FAILURE);
+        }
+
+        snprintf(full_path, full_path_len, "%s/%s", token, args[0]);
+
+        if (access(full_path, X_OK) == 0) {
+            pid = fork();
+            if (pid == 0) {
+                if (execve(full_path, args, NULL) == -1) {
+                    perror("execute_command");
+                    exit(EXIT_FAILURE);
+                }
+            } else if (pid < 0) {
+                perror("fork");
+                exit(EXIT_FAILURE);
+            } else {
+                do {
+                    waitpid(pid, &status, WUNTRACED);
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+                free(full_path);
+                return 1;
+            }
+        }
+
+        free(full_path);
+        token = strtok(NULL, ":");
+    }
+
+    fprintf(stderr, "Command not found: %s\n", args[0]);
+    return 1;
+}
+
+int execute_shell_command(char **args) {
+    if (args[0] == NULL) {
+        return 1;
+    }
+
+    if (strcmp(args[0], "exit") == 0) {
+        return 0;
+    }
+
+    /* Execute command */
+    return execute_command(args);
+}
+
+void shell_loop(void) {
     char *line;
     char **args;
     int status;
@@ -188,6 +190,10 @@ void shell_loop(void)
     do {
         write_output("$ ");
         line = my_getline();
+
+        if (line == NULL) {
+            break;
+        }
         args = split_line(line);
         status = execute_shell_command(args);
 
@@ -196,8 +202,7 @@ void shell_loop(void)
     } while (status);
 }
 
-int main(void)
-{
+int main(void) {
     shell_loop();
     return EXIT_SUCCESS;
 }
