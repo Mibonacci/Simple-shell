@@ -19,7 +19,7 @@ int exec(char **args) {
             exit(EXIT_FAILURE);
         }
     } else if (process < 0) {
-        perror("fork");
+        perror("");
     } else {
         do {
             waitpid(process, &status, WUNTRACED);
@@ -28,63 +28,40 @@ int exec(char **args) {
     return 1;
 }
 
-void prompt(void)
-{
+void prompt(void) {
     char input[MAX_INPUT_SIZE];
-    char output[MAX_INPUT_SIZE];
     char *args[MAX_INPUT_SIZE];
-    char *spacing = input;
-    char *outputPtr = output;
-	char *inputclone;
-	char promptStr[] = "$ ";
-	char *token;
+    char *token;
     int i;
 
-    while (1)
-    {
-        write(STDOUT_FILENO, promptStr, sizeof(promptStr) - 1);
-        if (fgets(input, sizeof(input), stdin) == NULL)
-        {
+    while (1) {
+        write(STDOUT_FILENO, "$ ", 2);
+        if (fgets(input, sizeof(input), stdin) == NULL) {
             perror("");
             exit(EXIT_FAILURE);
         }
 
-		input[strcspn(input, "\n")] = '\0';
-
-        /*this is to override multiple spaces between command arguments*/
-        while (*spacing)
-        {
-            *outputPtr++ = *spacing++;
-            while (isspace(*spacing) && (outputPtr == output || !isspace(outputPtr[-1])))
-            {
-                spacing++;
-            }
-        }
-        *outputPtr = '\0';
-
-        inputclone = strdup(output);
-        if (inputclone == NULL)
-        {
-            perror("strdup");
-            exit(EXIT_FAILURE);
-        }
+        input[strcspn(input, "\n")] = '\0';
 
         i = 0;
-        token = strtok(output, " \t\n");
-        while (token != NULL)
-        {
+        token = strtok(input, " \t\n");
+        while (token != NULL) {
             args[i++] = token;
             token = strtok(NULL, " \t\n");
         }
         args[i] = NULL;
-        exec(args);
+        
+        if (i > 0) {
+            if (strcmp(args[0], "exit") == 0) {
+                exit(0);
+            }
+        }
 
-		free(inputclone);
+        exec(args);
     }
 }
 
-int main()
-{
+int main() {
     prompt();
     return 0;
 }
