@@ -62,5 +62,3 @@ void change_directory(char **directories, char *command_name);
 int myecho(char **tokens, int *status);
 
 #endif
-
-/*custom functions*/
